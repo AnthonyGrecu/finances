@@ -13,42 +13,43 @@ def get_unique_excel_path(base_path):
     return base_path
 
 def extract_data_from_pdf(pdf_path, bank_type):
-    data = []
+    # ... other code as before ...
 
-    with pdfplumber.open(pdf_path) as pdf:
-        for page_num in range(len(pdf.pages)):
-            page = pdf.pages[page_num]
+    for page_num in range(len(pdf.pages)):
+        page = pdf.pages[page_num]
 
-            # Adjust table extraction parameters
-            table_settings = {
-                "vertical_strategy": "text",
-                "horizontal_strategy": "lines",
-                "intersection_y_tolerance": 8
-            }
+        # Adjust table extraction parameters based on your analysis
+        table_settings = {
+            "vertical_strategy": "text",
+            "horizontal_strategy": "text",
+            "intersection_y_tolerance": 2  # adjust as needed
+        }
 
-            table = page.extract_table(table_settings)
+        table = page.extract_table(table_settings)
 
-            # Placeholder for bank-specific logic
-            if bank_type == "RBC":
-                # Apply RBC-specific processing
-                pass
-            elif bank_type == "Amex":
-                # Skip the first page for Amex
-                if page_num == 0:
-                    continue
+        if table is not None:
+            print(f"Table on page {page_num + 1} successfully extracted.")
 
-                # Apply Amex-specific processing
-                print("AMEX detected. Applying AMEX-specific processing.")
-                pass
+            data = []
+            for row in table[4:]:  # skip headers
+                date_index = row.find("Transaction date") + len("Transaction date") + 1
+                description_index = row.find("Details") + len("Details") + 1
+                amount_index = row.rfind("Amount") + len("Amount") + 1
 
-            # Check if table extraction was successful
-            if table is not None:
-                print(f"Table on page {page_num + 1} successfully extracted.")
-                # Assuming the data you need is in a specific row and column range
-                # Adjust these indices based on the layout of your bank statement
-                data += [row[1:4] for row in table[3:]]
-            else:
-                print(f"Table on page {page_num + 1} not found or extraction failed.")
+                if date_index > -1 and description_index > -1 and amount_index > -1:
+                    data.append([row[date_index], row[description_index], row[amount_index]])
+                else:
+                    print(f"Warning: Keyword not found in row: {row}")
+
+            if data:
+                # Create DataFrame and proceed with further processing
+                columns = ["Date", "Payer/Payee", "Amount"]
+                df = pd.DataFrame(data, columns=columns)
+                # ... continue with data processing ...
+
+        else:
+            print(f"Table on page {page_num + 1} not found or extraction failed.")
+
 
     # Create a DataFrame with the extracted data
     columns = ["Date", "Payer/Payee", "Amount"]
